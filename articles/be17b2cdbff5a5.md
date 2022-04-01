@@ -3,7 +3,7 @@ title: "manjaroのbootstrapを作ってみた。"
 emoji: "🌊"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["Linux", "仮想環境", "Arch Linux", "manjaro"]
-published: tru
+published: true
 ---
 
 ## bootstrapとは？
@@ -53,7 +53,7 @@ sudo install -m 755 manjaro-bootstrap.sh /usr/local/bin/manjaro-bootstrap
 
 ```bash
 # ヘルプ表示
-$ manjaro-bootstrap -h
+manjaro-bootstrap -h
 ```
 
 使い方流れ
