@@ -1,0 +1,10 @@
+title: "bash初心者脱出"
+summary: "bashスクリプト付き"
+topics: ["Linux", "bash"]
+published: false
+price: 500 # 有料の場合200〜5000
+# 本に含めるチャプターを順番に並べましょう
+chapters:
+  - reverse
+  - temporary
+  - loop
