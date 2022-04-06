@@ -8,3 +8,6 @@ chapters:
   - reverse
   - temporary
   - loop
+  - grep
+  - deepl_translate
+  - slack
