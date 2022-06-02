@@ -78,6 +78,10 @@ docker-composeと同じディレクトリに下記の構成で
 接続文字列の入ったテキストを置いておくと、
 docker-compose起動時に自動的に接続しにいく。
 
+Oracleのドキュメントも分かりづらく、ネットで探してもCDBなのかPDBなのか
+はっきりしない記事が多いが、
+PDBでしかApexは今は動かないため、CDBでなくてPDBに接続しに行くこと。
+
 ```txt:ords_volume/conn_string.txt
 CONN_STRING=sys/manager@db:1521/XEPDB1
 ```
@@ -105,8 +109,6 @@ docker container commit <commit id> <tagname>
 docker container commit c3785de katsutoshiotogawa/oracle:21.3.0-xe-apex-dev
 ```
 
-image push
-
 imageをどこかのレポジトリにpushしないとDockerfile
 から参照できないのでpushすること。
 
@@ -117,38 +119,6 @@ docker image push <tagname>
 
 # example
 docker image push katsutoshiotogawa/oracle:21.3.0-xe-apex-dev
-```
-
-これからapexランタイム環境用のDBコンテナも作っておこう。
-
-## apexランタイム環境用DB
-
-ORCL_softwareというディレクトリを作り
-そこにapexのzipファイルをダウンロードする。
-
-```Dockerfile
-ARG VARIANT="21.3.0-xe"
-
-FROM katsutoshiotogawa/oracle:${VARIANT}-apex-dev
-USER root
-# software update
-RUN yum update -y
-
-USER oracle
-
-COPY ORCL_software/apex_*.zip .
-
-RUN unzip apex_*.zip > /dev/null
-RUN rm apex_*.zip
-
-WORKDIR /home/oracle/apex
-
-RUN sqlplus / as sysdba @apxdevrm
-
-
-WORKDIR /home/oracle
-
-RUN rm -rf apex/
 ```
 
 ## apexアカウント初期状態
