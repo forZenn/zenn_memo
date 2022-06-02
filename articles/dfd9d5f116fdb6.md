@@ -21,6 +21,9 @@ OTNにあるOracleのソフトウェアは商用利用でなければ、XE以外
 
 [oracle container registry](https://container-registry.oracle.com/ords/f?p=113:10::::::)
 
+また、oracle社はOTNライセンスのソフトウェア含めて再配布不可能としているため、
+ビルドしたImageを使う場合は、*Imageをprivateなレポジトリ*に置くこと。
+
 ## oracleのcontainer registry
 
 下記のレジストリからdocker imageをpullして使うことになる。
@@ -79,6 +82,90 @@ docker-compose起動時に自動的に接続しにいく。
 CONN_STRING=sys/manager@db:1521/XEPDB1
 ```
 
+## docker-compose立ち上げ
+
+最初にdocker-composeを立ち上げたとき、
+apex側から、oracle dbに接続しに行って、
+設定を変えるのでしばらく待つ。
+dbの立ち上げ自体にもそれなりに時間かかるので、
+合わせて、10分以上待つことになる。
+
+## apex開発環境用DB
+
+http:8181に接続できたら、この状態で一度
+oracle dbの方のcontainerをコミットして
+imageを作っておくと良いだろう。
+apexの初期設定が反映されたoracle dbのコンテナを作ることができる。
+これをapex開発環境用DBとすると良い。
+
+```bash
+docker container commit <commit id> <tagname>
+
+# example 
+docker container commit c3785de katsutoshiotogawa/oracle:21.3.0-xe-apex-dev
+```
+
+image push
+
+imageをどこかのレポジトリにpushしないとDockerfile
+から参照できないのでpushすること。
+
+ライセンスの問題で必ずprivate レポジトリ。
+
+```bash
+docker image push <tagname>
+
+# example
+docker image push katsutoshiotogawa/oracle:21.3.0-xe-apex-dev
+```
+
+これからapexランタイム環境用のDBコンテナも作っておこう。
+
+## apexランタイム環境用DB
+
+ORCL_softwareというディレクトリを作り
+そこにapexのzipファイルをダウンロードする。
+
+```Dockerfile
+ARG VARIANT="21.3.0-xe"
+
+FROM katsutoshiotogawa/oracle:${VARIANT}-apex-dev
+USER root
+# software update
+RUN yum update -y
+
+USER oracle
+
+COPY ORCL_software/apex_*.zip .
+
+RUN unzip apex_*.zip > /dev/null
+RUN rm apex_*.zip
+
+WORKDIR /home/oracle/apex
+
+RUN sqlplus / as sysdba @apxdevrm
+
+
+WORKDIR /home/oracle
+
+RUN rm -rf apex/
+```
+
+## apexアカウント初期状態
+
+下の設定になる。
+パスワードはログインしたら変更させられる。
+
+- Workspace: internal
+- User:      ADMIN
+- Password:  Welcome_1
+
 ## まとめ
 
 情報は少ないが、意外と環境構築が簡単なことがわかると思う。
+
+## ソースコード
+
+最新のソースコードはここにあります。
+
+[github](https://github.com/KatsutoshiOtogawa/oracle_apex_docker)
