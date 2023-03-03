@@ -14,10 +14,19 @@ virtualboxはwindowsやらmacやらlinuxやらいろんなOSが
 体系的にまとまっているサイトが無かったので書く。
 hyper-vはwindows pro以上のエディションじゃないと使えないからそれは注意ね。
 
+## hypber-vのインストール
+
+管理者権限でpowershellを立ち上げて、下記のコマンドを実行してください。
+Hyper-vがインストールされるので、再起動すると使えるようになります。
+
+```powershell
+Enable-windowsOptionalFeature -online -FeatureName Microsoft-Hyper-V-Hypervisor -All
+```
+
 ## Hyper-V Administratorsグループに入れる
 
 hyper-vを使うためにhypber-v Administratorグループに入れる必要があります。
-これは最初にwindowsをインストールした、ユーザーだったりしてAdministratorグループにすでに入っているなら不要です。
+少々お行儀が悪いですが、最初にwindowsをインストールしたユーザーだったりしてAdministratorグループにすでに入っているなら常に管理者権限で動かす事もできます。
 
 ### グループの確認
 
@@ -35,6 +44,14 @@ Get-LocalGroupMember Administrators
 $user = "追加したいユーザー名"
 # Hypber-V Administratorグループに追加
 Add-LocalGroupMember -Group "Hyper-V Administrars" -Member $user
+```
+
+## vagrantのインストール
+
+最近はwingetで入る。
+
+```powershell
+winget install Hashicorp.Vagrant
 ```
 
 ## Vagrant file
