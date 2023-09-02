@@ -43,7 +43,7 @@ Get-LocalGroupMember Administrators
 ```powershell
 $user = "追加したいユーザー名"
 # Hypber-V Administratorグループに追加
-Add-LocalGroupMember -Group "Hyper-V Administrars" -Member $user
+Add-LocalGroupMember -Group "Hyper-V Administrators" -Member $user
 ```
 
 ## vagrantのインストール
