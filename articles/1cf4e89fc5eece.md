@@ -286,7 +286,7 @@ share_lib/architecure/共有ライブラリ
 
 同様に
 csharpで作ったdllもchsarp_dllというディレクトリを作り
-charp_dll/targetframeworkのバージョン/作ったdll
+csharp_dll/targetframeworkのバージョン/作ったdll
 というふうにcsharpのdllを配置します。
 
 そして下のスクリプトモジュールを書いてください。
