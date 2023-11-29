@@ -110,7 +110,7 @@ suffixの部分はlinux, macはをlibに、windowsは空文字列になります
 package.nameはCargo.tomlの\[package\]のnameという項目が使われます。
 extの部分はwindowsはdll, macはdylib, linuxはsoになります。
 
-## chsarpのソースコード
+## csharpのソースコード
 
 ひねる必要がある。
 ここは先ほど作成したrustの共有ライブラリを実行するエントリーポイントになります。
@@ -285,7 +285,7 @@ share_lib/architecure/共有ライブラリ
 という風にrustで作った共有ライブラリを配置します。
 
 同様に
-csharpで作ったdllもchsarp_dllというディレクトリを作り
+csharpで作ったdllもcsharp_dllというディレクトリを作り
 csharp_dll/targetframeworkのバージョン/作ったdll
 というふうにcsharpのdllを配置します。
 
