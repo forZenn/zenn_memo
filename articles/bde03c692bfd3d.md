@@ -2,7 +2,7 @@
 title: "vscodeのdevcontainer用Imageの作り方"
 emoji: "🌟"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["vscode", "Docker"]
+topics: ["vscode", "Docker", "devcontainer"]
 published: true
 published_at: 2022-06-12 19:00 
 ---
