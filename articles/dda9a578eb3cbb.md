@@ -207,8 +207,6 @@ Invoke-Expression "Invoke-WebRequest -Uri $Uri -body `$queryParameters"
 
 ## 問題のソースコードの修正
 
-xmlなどのオブジェクトも同様にオブジェクトの名前を渡す。
-
 ということで、 *数字と文字列以外を渡す場合はエスケープが必須*と考えると良い。
 
 以上を踏まえて上のInvoke-WebRequestのソースコードは下のようになる。
