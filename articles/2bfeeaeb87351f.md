@@ -22,6 +22,12 @@ nodejsでも差はないです。
 
 特に断りが無い限り一緒に書いているjsdocとコード上、linter上全く同じように動作します。
 
+### バージョン
+
+2025-05-30日現在
+
+typescript 5.8.3
+
 
 ### 型定義
 
@@ -62,7 +68,10 @@ typeとinterfaceの使い分けだが、
 **慣れましょう**
 
 ```ts
-
+interface Point {
+    x: number;
+    y: number;
+}
 ```
 
 jsdocでの表記
@@ -72,12 +81,47 @@ jsdocでの表記
 /**
  * @interface {Object} Point
  * @propterty {number} x
+ * @propterty {number} x
  * /
 ```
 
-### typescriptでは
+### 
 
-値自体も型として扱うということだ。
+「typescriptは型があるから、曖昧じゃなくて安全！」とか
+よく言うが、もっと具体的に言えとか、
+下手したらもっと意味が無くて個人的なか着心地云々の
+
+キーを追加できることである。
+javascriptの一番のバグの温床になっていたのは
+型がないことでは無く、
+キーを動的に追加することができるのに、
+これと判別可能なユニオンを作る習慣も無いために
+下手くそは無限に下手くそに描ける作りになっていたからだ。
+
+
+
+### リテラル型
+
+
+typescriptでは1.12や"hello world", trueみたいな
+number, string, booleanのうち指定の値しか取れない型をリテラル型という。
+jsのオブジェクトリテラルと名前がややこしくて、紛らわしいかもしれないが、
+リテラルとはプログラミング用語で具体的な定数のことを指す。
+普通に[csharpの公式ドキュメント](https://learn.microsoft.com/ja-jp/dotnet/csharp/language-reference/tokens/raw-string)でもjavaでもpythonでも使われる(ただし、リテラル型という型はtypescriptぐらいにしかない。)。
+
+「リテラル型という特殊な型が存在しているんだなぁ。」
+という理解で一旦は大丈夫です。
+
+
+```ts
+type Hello = "HelloWorld"
+
+// HelloはHelloWorldのリテラル文字列リテラルしか受け付けない。
+const aaa: Hello = "HelloWorld";
+```
+
+リテラル型を作っても一種類の値しか入らないので何が嬉しいのか全く分からないと思うが、
+これは後のUnion型やas constの時に分かる。
 
 ### 固定長の配列
 
@@ -109,19 +153,82 @@ const [count, setCount] = useState(0);
 
 // 初期値がない場合、booleanとundefined両方がありうるため、下のようになる。
 /** @type {[boolean | undefined, React.Dispatch<React.SetStateAction<boolean | undefined>>]} */
-const [] = useState();
+const [flag, SetFlag] = useState();
 ```
 
 ### discriminated union\(判別可能なUnion\)
 
-判別可能なUnionという訳がいろんなところにあるが、
-テクニック名の和訳かつ、
-Unionが判別するのでなくて、Unionで状態を判別するのだから、
-Union判別型、Union判別法が自然な訳な気がする。
-特殊な構文や機能が新たにあるわけじゃないし。
+判別可能なUnionというのは良い和訳でもないし、英語の命名自体、Unionに着目するより
+パターンに着目してdiscrimitaed union patternと命名すべきだとは思うが、この名前が定着した。
+
+先にreadonlyやインデクスシグネチャについての説明を読んでからここを読んでほしい。
 
 Unionに制御構造持たせようとすると、自然とこの書き方に行き着く。
 
+tsじゃなくて、jsのみの場合は下のようなコードを書いている現場が多かった。
+
+```js
+
+// 状態に合わせたスタイルの作成
+function getButtonStyle(buttonState) {
+  let style = {};
+
+  if (buttonState.type === 'loading') {
+    style.backgroundColor = 'lightgray';
+    // 'spinnerColor' は loading 状態にしかないプロパティ
+    style.color = buttonState.spinnerColor; // 間違って textColor などと書いてしまうと undefined
+  } else if (buttonState.type === 'error') {
+    style.backgroundColor = 'pink';
+    // 'textColor' は error 状態にしかないプロパティ
+    style.color = buttonState.textColor;
+  } else {
+    style.backgroundColor = 'lightblue';
+    style.color = 'black';
+  }
+  return style;
+}
+```
+
+これだとパッと見でどんなオブジェクトリテラルが返ってくるのか分からないと思う。
+これぐらいなら処理終えるだろうが、これのロジックがどんどん長くなり改修が増えるともはや追うのは不可能だろう。
+
+なので、筆者は下のようなコメントを追加することもあった。
+だってコメントで想定しているオブジェクトリテラルのパターン書かないと何返ってくるのか分からんのだもん。
+
+```js
+// ボタンの状態を表すオブジェクトとしては下の状態を想定している。
+// ローディング状態: { type: 'loading', message: '読み込み中...', spinnerColor: 'blue' }
+// エラー状態: { type: 'error', errorMessage: '操作に失敗しました', textColor: 'red' }
+// 通常状態: { label: 'クリックしてください' }
+```
+
+この場合はtypeでボタンの状態を判別しているのだが、これだと制御文に従って動的に
+プロパティを作っていることになるため、非常にソースコードを追うのが大変になる上に
+壊れやすくなる。
+
+これはloadingでひどい場合はloadingが0,errorが1でdefaultは特に値を想定していない(undefinedで良いと思っている。)
+という場合がある。
+
+また、下記のように呼び出し先の関数でプロパティを追加することも多々あった、
+
+```ts
+
+```
+
+今後編集権限が無いviewer
+
+```ts
+```
+
+判別可能なユニオンという形で
+
+jsは参照の値渡し(共有渡し)かつcsharpのようにreadonlyが無いので、簡単に破壊的なコードを
+書いてしまう。
+
+実際に、筆者もこれがいろんなところに散っている、コードの
+改修や機能追加をやったことがあったのですが、辛かったです。
+これらはjsの問題というより、**プロジェクトにいるプログラマーやコード見ている人のスキルの問題**(コメントなどのドキュメンテーションでも回避できる。)も多くある。
+これはしっかりと設計したら、discriminated unionという言葉やパターンを知らなくても同じものに行き着くからである。
 
 アプリケーションコードで頻出。
 
@@ -248,7 +355,8 @@ Zodやjoiなど、
 
 ### インデックスシグネチャ
 
-javascriptの場合は動的にオブジェクトリテラルにキー、プロパティを追加できる。
+tsで動的にオブジェクトリテラルのキーを追加するための機能、
+元々javascriptの場合は動的にオブジェクトリテラルにキー、プロパティを追加できる。
 
 ```js
 const point = {
@@ -260,7 +368,7 @@ const point = {
 point.z = 100;
 ```
 
-これはtsでは禁止されており、明確にコンパイルエラーになる。
+しかし、これはtsでは禁止されており、明確にコンパイルエラーになる。
 最近ではjsでも、エディタ上では黄色い下線で警告が出る。
 
 ```ts
@@ -309,6 +417,7 @@ const threeDObject: ThreeDObject = {
 }
 ```
 
+:::details ライブラリの例
 reactのコンポーネント関係のライブラリによく使われる。
 コンポーネントに動的にキーを追加したいとか。
 
@@ -319,9 +428,6 @@ js時代からts時代までお金を埋めているシステムだし、
 確実に長期運用が見込めるため、
 無理にts化する必要はないとは思うが。
 後述するesm+jsdocで解決できないか負担の比較を考えること。
-
-
-
 
 ここでCreativ Timのソースコードを見てみよう。
 
@@ -361,6 +467,7 @@ interface Language {
  * @property {[lauguage: string]}
  * /
 ```
+:::
 
 
 ### ジェネリクス
@@ -415,23 +522,171 @@ https://mui.com/material-ui/react-checkbox/
 
 ### readonly
 
+constと何が違うのか？
+というと、constは再代入の禁止で、
+readonlyはプロパティの変更や破壊的メソッドの禁止です。
+
 classのプロパティ、interfaceのプロパティに使える。
 
 interfaceに使えるということはオブジェクトリテラルのプロパティを
 固定化できるということ。
 
-1. クラス定義時の初期化
-2. コンストラクタでの初期化、
+初期化できるのは下記の時のみ。
 
-csharpっぽい感じになる。
+1. クラス定義時の初期化
+2. コンストラクタでの初期化
+3. オブジェクトリテラルの初期化
+
+```ts
+interface Point {
+    x: number;
+    readonly y: number;
+}
+
+const point: Point = {
+    x: 30,
+    y: 40,
+}
+
+//　初期化以降に値を変えようとするとエラーになる。
+point.y = 50;
+```
+
+typescriptの面白い機能として
+インスタンスの配列やSet,Map,オブジェクトリテラル自体にもreadonlyを適用することができる。
+この場合はプロパティの変更と破壊的なメソッドが禁止される。
+
+
 
 
 ```ts
+// この場合は、各インデックスに入っている値の変更ができなくなる。
+// const countDown: ReadonlyArray<number> = [3, 2, 1, 0]と一緒。
+const countDown: readonly number[] = [3, 2, 1, 0];
+
+// エラーになる。
+countDown[0] = 5;
+
+// エラーになる。
+countDown.push(6)
+
+const abc: ReadonlySet<number> = new Set([1, 2, 3, 4]);
+
+// addやdeleteをしようとするとエラーになる。
+abc.add(5)
+
+
+const aaa: Readonly<Point> = {
+    num: 34,
+    aa: 23
+}
 ```
 
-### 列挙型
+変数 : readonly 型 と表記を省略できるのは配列だけだ。
+
+特にfuncitonのオブジェクトの引数をreadonlyにできる点は覚えておこう。
+たまに知らん人いる。
+javascriptは参照の値渡しなので、関数の呼び出し先でプロパティなどの値を
+変更するとその処理が呼び出し先で反映されてしまう。
+
+```ts
+function setCountDown(count: readonly number[]) {
+
+}
+
+interface Point {
+    x: number;
+    y: number;
+}
+
+function setPoint(point: Readonly<Point>) {
+    // プロパティを変更するのでエラーになる。
+    point.y = 34;
+}
+```
+
+関数の引数の配列は基本的にreadonlyつけといた方が良い。
+マジでわからんバグと化す。
+
+
+残念ながら**readonlyはjsdocではエラーにならない**ので、
+tsではなく、jsdocを使う場合は気をつけよう。
+
+```ts
+/** @type {ReadonlyArray<number>} */
+const abc = [1, 2, 3];
+
+// エラーにならない。
+abc[0] = 5
+```
+
+#### readonlyを基本的に必須にすべきかどうか？
+
+「exportしたり、公開するオブジェクトは基本的にreadonlyにすべきで、
+そうでないコードはreadonlyを神経質に使う程でもないな、
+ソースコードの変更をおこうときに不便だし。」
+って昔は思っていたのですが、
+javascriptが破壊的な処理割と書きやすくって、
+簡単に壊すコード書く人がそれなりにいることが分かり、
+アプリケーションコードでも基本的にreadonlyでいいんじゃないか？
+って最近は思ってます。
+
+### as const
+
+~~ややこしいから、なんか別の名前にして欲しかった。~~
+
+なんかネットで探すとなぜか知らんけどreadonlyの比較がやたら多いが、as constはコードから型を作成するのが基本的な役割になり、
+**readonlyとの比較はおかしい。用途が全然違う**。
+\(昔はそういう使い方がメインだったとかあるならそうかもだけど昔は知らん。\)
+
+ライブラリ作ったり、型パズルやるなら必須。
+
+例えば、上のOS typeを作りたいとする。
+
+```ts
+
+const os = ["MacOS", "Windows", "Linux"];
+
+type  OS = typeof os;
+
+
+```
+
+これぐらいだと全く有り難みがわからないが、例えば
+オブジェクトの場合を考えてみよう。
+
+styleとかのライブラリ見るとよく見かける。
+
+```ts
+
+const OS = {
+    success: "請求書を作成しました。",
+    info: ""
+    error: "請求書の作成に失敗しました。"
+
+
+} as const;
+
+type os = typeof MacOS.distributed
+```
+
+zodでよく使う。
+
+
+### Enum
 
 使ったらアカんやつ。tsの黒歴史。
+
+
+```ts
+enum ButtonStatus {
+  ON,
+  Monkey,
+  Lion,
+  Bear,
+}; 
+
+```
 
 typescriptのtsconfig.tsの実装の至る所で使われている。
 
@@ -448,6 +703,30 @@ interface System {
     os: "MacOS" | "Windows" | "Linux"
 }
 ```
+
+tsをcsharpに寄せようとしてこの機能追加したんかな？
+
+:::details ライブラリの例
+
+githubの[microsoft/Typescript](https://github.com/microsoft/TypeScript/tree/v5.8.3)を見ればわかるが、
+src/compiler/配下の割とコアな部分に満遍なく使われている。
+
+<!-- 特に言語周りのパーサー部分はenumで実装する部分が多いので、
+enum使ったほうがパーサーの実装が楽だったりしたのかもしれない(知らんけど)。
+ちなみにPowershellも割とパーサーはenumで結構使ってる。(global, script, functionなどのスコープはenum)
+
+src/compiler/checker.tsを読むのは大変だが、
+enumを頼りに読むとそこそこ読める。
+tsconfig.jsonの
+
+```typescript
+const _computedOptions = createComputedCompilerOptions({
+    ...
+```
+
+元々はtypescriptのcompilerののための機能だったりしたのかも? -->
+
+:::
 
 ### unknown型
 
@@ -681,6 +960,9 @@ typescriptはオブジェクトのプロパティを集合の要素のように�
 長々と書いたけど
 アプリケーションコードを書くだけなら、
 interface, type, union, discriminated Union, ジェネリクス、インデックスシグネチャ、型ガードさえ抑えとけばあとはどうにかなる。
+
+ライブラリのところの内容以外は必須。
+
 Exclude, Extracts, Pick, Omitはそんな使わない。
 
 generics 
