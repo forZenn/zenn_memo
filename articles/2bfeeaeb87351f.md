@@ -177,7 +177,6 @@ const invoiceMessage = {
  */
 ```
 
-
 配列に複数の型が入っている場合は、後述するUnion型として推論されます。
 
 ```ts
