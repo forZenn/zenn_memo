@@ -1151,10 +1151,7 @@ userPermissions = userPermissions & ~Permissions.Write
 
 ## まとめ
 
-長々と書いたけど
-ライブラリのところの内容以外は大体必須。
-
-Exclude, Extracts, Pick, Omitはライブラリ以外は、そんな使わない。
+長々と書いたけど大体のことが必須なので、覚えてください。
 
 :::details ここまで読んでくれた人へ
 最近記事を書くモチベーションが低下しています。
