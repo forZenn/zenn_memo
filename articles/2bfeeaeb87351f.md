@@ -3,7 +3,7 @@ title: "TypeScriptの強力な機能たち：なぜそれらを使うのか？"
 emoji: "🐥"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["contest2025ts", "ts", "typescript"]
-published: false
+published: true
 ---
 
 「なぜこのtypescriptの機能を使うのですか？」と質問された際に、
@@ -157,9 +157,10 @@ JSDocでの表記は以下のようになります。
 ```ts
 const countDown = [1, 2, 3];
 
-// CountDown型はnumber型と推論される。　
-type CountDown = typeof countDown[number];
-
+/**
+ * CountDown型はnumber型と推論される。　
+ * @typedef {typeof countDown[number]} CountDown
+ */
 
 const invoiceMessage = {
     success: "請求書を作成しました。",
@@ -184,6 +185,17 @@ const result = ["success", new Error("管理者に問い合わせてください
 
 // Result型はstring | Error型のUnion型と推論される。
 type Result = typeof result[number];
+```
+
+JSDocでの表記は以下のようになります。
+
+```ts
+const result = ["success", new Error("管理者に問い合わせてください")];
+
+/**
+ * // Result型はstring | Error型のUnion型と推論される。
+ * @type {typeof result[number]} Result
+ */
 ```
 
 他の言語経験者からすると、これがドキュメンテーションなのかコードなのか判別しづらく、
@@ -238,19 +250,6 @@ JSDocでの表きは以下のようになります。
 
 TypeScriptは、このような動的なキー追加による予期せぬ挙動をコンパイル時に
 検知し、未然に防ぐことでコードの安全性を高めます。
-
-「typescriptは型があるから、曖昧じゃなくて安全！」とか
-よく言うが、もっと具体的に言えとか、
-下手したらもっと意味が無くて個人的なか着心地云々の
-
-キーを追加できることである。
-javascriptの一番のバグの温床になっていたのは
-型がないことでは無く、
-キーを動的に追加することができるのに、
-これと判別可能なユニオンを作る習慣も無いために
-下手くそは無限に下手くそに描ける作りになっていたからだ。
-
-
 
 ### リテラル型
 
@@ -417,6 +416,17 @@ importの場合は下記のようになります。
 import type { MyType } from './MyType';
 
 const value: MyType = "hello";
+```
+
+jsdocでimportを書く場合は以下のようになります。
+
+```ts
+// MyType.tsから型をimport
+// jsdocでは@importはtype-chekingのみ提供する。[jsdoc import](https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html#import)
+/** @import {MyType } from './index' */
+
+/** @type {MyType} */
+const value = "hello";
 ```
 
 #### interface
@@ -740,6 +750,23 @@ let output = identity<string>("myString"); // outputはstring型
 let output2 = identity<number>(123); // output2はnumber型
 ```
 
+JSDocでの表記は次のようになります。
+
+```ts
+/**
+ * @template T
+ * @param {T} arg 
+ * @returns {T}
+ */
+function identity(arg) {
+    return arg;
+}
+
+// それぞれ下記のように推論される。
+let output = identity("myString"); // outputはstring型
+let output2 = identity(123); // output2はnumber型
+```
+
 ####　ジェネリクス型制約
 
 しかし、アプリケーションコードの場合、ほとんどのケースでジェネリクスとに入る方は数通りに限定
@@ -750,14 +777,31 @@ let output2 = identity<number>(123); // output2はnumber型
 
 ```ts
 // ジェネリクス型制約は <T extends 型1 | 型2>という表記になる。
-// Tはstringまたはnumberのいずれかの型に限定されます
-function printId<T extends string | number>(id: T): void {
-    console.log(id);
+// Tはstringまたは配列のいずれかの型に限定されます
+function getLength<T extends string | unknown[]>(item: T): number {
+    return item.length;
 }
 
-printId("abc"); // OK
-printId(123); // OK
-// printId(true); // エラー: 型 'boolean' を型 'string | number' に割り当てることはできません。
+getLength<string>("abc"); // 3
+getLength<number[]>([1, 2, 3, 4]); // 4
+```
+
+JSDocでは下記のような書き方になります。
+
+```ts
+// ジェネリクス型制約は <T extends 型1 | 型2>という表記になる。
+// Tはstringまたは配列のいずれかの型に限定されます
+/**
+ * @template {string | unknown[]} T stringまたはnumberの型を継承した型と縛ることができる。
+ * @param {T} item 
+ * @returns {number}
+ */
+function getLength(item) {
+    return item.length;
+}
+
+getLength("abc"); // 3
+getLength([1, 2, 3, 4]); // 4
 ```
 
 他のプログラミング言語ではジェネリクスを使ったことはあっても、自分で実装した経験がない人も多いかもしれません。しかし、TypeScriptでは非常に頻繁に利用することになります。
@@ -807,8 +851,8 @@ interface Point {
 }
 
 const point: Point = {
-    x: 30,
-    y: 40,
+    x: 30, 
+    y: 40, // yはこの初期化時のみ値を変更できる。。
 }
 
 //　初期化以降に値を変えようとするとエラーになる。
@@ -907,15 +951,13 @@ function countDownFunc(count: readonly number[]) {
     // count[0] = 5; // エラー: 読み取り専用であるため、変更できません。
 }
 
-
-
 function pointFunc(point: Readonly<Point>) {
     // プロパティを変更するのでエラーになる。
     // point.y = 34;
 }
 ```
 
-残念ながら**readonlyはJSDocではエラーになりません**ので、
+残念ながら**readonlyは値を変更してもJSDocではエラーになりません**ので、
 TypeScirptではなく、JSDocを使う場合には注意が必要です。
 
 ```ts
@@ -937,6 +979,7 @@ abc[0] = 5
 簡単に壊すコードを書く人がそれなりにいることが分かり、
 最近ではアプリケーションコードでも基本的にreadonlyを使うべきなのではないか？
 と考えています。
+時に関数の引数に関しては積極的にreadonlyを使うべきでしょう。
 
 ### as const
 
@@ -963,11 +1006,33 @@ const osNames = ["MacOS", "Windows", "Linux"];
 type OS = typeof osNames[number];
 ```
 
-しかし、これを行うと、OS型はstring型であると推論されてしまいます。
-
+しかし、最初のtypeofの説明でもしましたが、配列に対してtypeosfを行うとOS型はstring型であると推論されてしまいます。
 
 ```ts
+// 上のように
+type OS = string;
+```
 
+下記のようにtypeofから型を取得する変数を変更不可なreadonlyの配列として宣言しても結果は同じです。
+
+```ts
+// readonlyにより、各々のプロパティは変更不可になるが...
+const osNames: readonly string[] = ["MacOS", "Windows", "Linux"];
+
+// これでもやはりOS型はstring型と推論されてしまう。
+type OS = typeof osNames[number];
+```
+
+これはreadonlyはあくまでプロパティの変更不可という制約を与えるだけで、
+「値そのものを型とする」という推論の挙動とは直接関係がないためです。
+
+どうすれば、配列の値から取得した型を"MacOS" | "Windows" | "Linux"のUnion型と推論させることができるでしょうか？
+
+この問題を解決するために存在するのが、as constです。
+このキーワードは**typescriptコンパイラに対してできるだけ具体的なリテラル型として推論**させるように指示します。
+結果としてオブジェクトのプロパティに対して再起的にreadonly制約を課しますがそれは副次的なものです。
+
+```ts
 const osNames = ["MacOS", "Windows", "Linux"] as const;
 
 // osNamesの各要素がリテラル型として推論され、それをUnion型として結合します。
@@ -980,321 +1045,201 @@ type OS = typeof osNames[number];
 type OS = "MacOS" | "Windows" | "Linux";
 ```
 
-これぐらいだと全く有り難みがわからないが、例えば
-オブジェクトの場合を考えてみよう。
 
-styleとかのライブラリ見るとよく見かける。
+オブジェクトリテラルも配列と同様に複数のリテラルを持つUnion型のとして取得するにはas constが必要になります。
 
 ```ts
-const invoiceMessage = {
+const Invoice = {
     success: "請求書を作成しました。",
-    info: "請求メッセージです。",
     error: "請求書の作成に失敗しました。"
 } as const;
 
-type os = typeof MacOS.distributed
+// "請求書を作成しました。" | "請求書の作成に失敗しました。"　というUnion型になる。
+type InvoiceMessage = typeof Invoice[keyof typeof Invoice];
 ```
 
-zodのようなバリデーションライブラリを使う時でも併せてよく使います。
+これらを聞いても全くありがたみが分からないかもしれませんが、
+後述のenumの代わりによく使います。
+
+下記がenumの代わりの例です。
+
+```ts
+const InvoiceEnum = {
+    Success: "請求書を作成しました。",
+    Error: "請求書の作成に失敗しました。"
+} as const;
+
+// "請求書を作成しました。" | "請求書の作成に失敗しました。"　というUnion型になる。
+type Invoice = typeof InvoiceEnum[keyof typeof InvoiceEnum];
+
+const invoice: Invoice = InvoiceEnum.Success;
+```
+
+#### 補足
+
+as constをenumの代わりとして使う場合、[サバイバルTypeScript 列挙型の代替案2: オブジェクトリテラル](https://typescriptbook.jp/reference/values-types-variables/enum/enum-problems-and-alternatives-to-enums#%E5%88%97%E6%8C%99%E5%9E%8B%E3%81%AE%E4%BB%A3%E6%9B%BF%E6%A1%882-%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E3%83%AA%E3%83%86%E3%83%A9%E3%83%AB)では下記のように、Enumの方と型の方を両方、同じ名前で宣言しています。
+
+```ts
+const Position = {
+  Top: 0,
+  Right: 1,
+  Bottom: 2,
+  Left: 3,
+} as const;
+ 
+type Position = (typeof Position)[keyof typeof Position];
+// 上は type Position = 0 | 1 | 2 | 3 と同じ意味になります
+ 
+function toJapanese(position: Position) {
+  switch (position) {
+    case Position.Top:
+      return "上";
+    case Position.Right:
+      return "右";
+    case Position.Bottom:
+      return "下";
+    case Position.Left:
+      return "左";
+  }
+}
+```
+
+これは一見名前が衝突してPositionのimport, export時にエラーが発生しそうに見えますが、
+typescriptコンパイラは実行時に存在する値\(cost Positionオブジェクトの方\)とコンパイル後に消える型\(type Positionの方\)を異なる名前空間として扱うため、
+名前の衝突が起きないのです。
+
+実質的にenumとして使っているオブジェクトと型の名前を分けるかどうかは、
+プロジェクトの方針に従いましょう。
+
+今は大抵の場合は一致させているみたいです。
 
 ### Enum
 
-使ったらアカんやつ。tsの黒歴史。
-Enumという言葉を見かけたら普通にプログラムで使うやつだ！
-と思って使い出すと思います。それが本来
+TypeScriptにおけるEnumはたまに勘違いされるが、非推奨ではないです。
+実際にtypescritコンパイラのソースコードにも使われています。
+
+使い方的には他のプログラミング言語のenumを使ったことがある人ならすぐ使えるようになると思います。
 
 ```ts
-enum ButtonStatus {
-  ON,
-  Monkey,
-  Lion,
-  Bear,
+enum ButtonColor {
+    RED,
+    GREEN,
+    BLUE,
+
 }; 
 
+let color: ButtonColor = ButtonColor.RED;
+
+console.log(color);
 ```
 
-typescriptのtsconfig.tsの実装の至る所で使われている。
+最近はtypescript界隈の特に理由がない場合はenumは使わない方が良いという主張が国内、国外問わず多いです。
 
-typescriptでは
-下記のようにUnionやinterfaceで解決できるため必要性がない。
-使わんでください。
-jsでも無くても困らない機能。
+一つは理由としてはEnumでやりたいことは下記のようにUnion型や上で説明したas constで表現できることです。
+
+Union型を使って表現する場合
 
 ```ts
-
-type os = "MacOS" | "Windows" | "Linux"
-
-interface System {
-    os: "MacOS" | "Windows" | "Linux"
-}
+// シンプルにUnion型として使う。
+type ButtonColor = "RED" | "GREEN" | "BLUE";
 ```
 
-tsをcsharpに寄せようとしてこの機能追加したんかな？
-
-:::details ライブラリの例
-
-githubの[microsoft/Typescript](https://github.com/microsoft/TypeScript/tree/v5.8.3)を見ればわかるが、
-src/compiler/配下の割とコアな部分に満遍なく使われている。
-
-<!-- 特に言語周りのパーサー部分はenumで実装する部分が多いので、
-enum使ったほうがパーサーの実装が楽だったりしたのかもしれない(知らんけど)。
-ちなみにPowershellも割とパーサーはenumで結構使ってる。(global, script, functionなどのスコープはenum)
-
-src/compiler/checker.tsを読むのは大変だが、
-enumを頼りに読むとそこそこ読める。
-tsconfig.jsonの
-
-```typescript
-const _computedOptions = createComputedCompilerOptions({
-    ...
-```
-
-元々はtypescriptのcompilerののための機能だったりしたのかも? -->
-
-:::
-
-### unknown型
-
-anyをより安全にした感じの方。
-インスタンスのnullableがより安全な型のように、
-
-anyはプロパティにアクセスしても、実行時までエラーか分からないし、
-コンパイル時にエラーとして処理されないが、
-
-unknownはエラーとして処理される。
-型ガードによって、型を絞りこむ、castするなどの
+Union型だけだと、enumで表現したいキーとvalueが同じ値になってしまうので、
+それを嫌うなら下のようにas constを使って実装します。
 
 ```ts
-
+// as　constを使う場合。
+const ButtonColor = {
+  RED: 0,
+  GREAN: 1,
+  BLUE: 2,
+} as const;
+ 
+type ButtonColor = typeof ButtonColor[keyof typeof ButtonColor];
 ```
 
-### never型
-
-型というより、変数がそのブロックに行かないことを示す、識別子、マーカー。
-
-必ず辿り着かないときにその型になる。
-
-voidは正常終了する関数と覚えたらいい。
-
-ライブラリで使われるというより、なんか気がついたら出てるので
-その程度の知識で良い。
-vscodeでもwebstormでもtooltipや下線でエラーが表示されるので、
-それを見て対処すれば困ることはないだろう。
-
-先ほどのOS型を使って考えてみよう。
-osごとによってキッティング作業が違うとする。
+もう一つの理由としては、typescriptのenumはJavaScriptとして出力したときに複雑すぎることです。
+最初にあげたenumの例をtypescriptコンパイラに通すと下記のような変数＋即時関数として
+出力されます。
 
 ```ts
-type OS = "Windows" | "MacOS" | "Linux";
+"use strict";
+var ButtonColor;
+(function (ButtonColor) {
+    ButtonColor[ButtonColor["RED"] = 0] = "RED";
+    ButtonColor[ButtonColor["GREEN"] = 1] = "GREEN";
+    ButtonColor[ButtonColor["BLUE"] = 2] = "BLUE";
+})(ButtonColor || (ButtonColor = {}));
 
-function kitting(os: OS) {
+var color = ButtonColor.RED;
 
+console.log(color); // → 0
+```
+
+ではunion型でもas constでも大体できるのになぜ、enumを使うことがあるのでしょうか？
+
+それはunion型や as constでは下記のようなbit演算を使って一つの値で複数の状態を表現できないことです。
+
+下記はファイルのパーミッションをenumで表現した物です。
+
+```ts
+enum Permissions {
+    None = 0,
+    Read = 1,
+    Write = 2,
+    Execute = 4,
+    Admin = Read | Write | Execute
 }
 
-if (OS)
+// 読み取り、書き取り権限両方ら次のように表す。
+let userPermissions: Permissions = Permissions.Read | Permissions.Write
+
+// 書き取り権限を削除するなら下のように行う。
+userPermissions = userPermissions & ~Permissions.Write
 
 ```
 
-switch分でも同様に
-
-### 型ガード
-
-typescriptではunion型を扱うことができるが、
-どの時点でどの型が入っているのか分からないことが起きる。
-また、js、tsでは頻繁にundefinedが入ってくるので、それを弾くために
-行う。　
-
-これはif文などの制御文を使うことにより、
-論理演算によりそのブロックでは存在しない型はなくなるその時点での
-型を絞り込むことができる。
-
-例えば、早期リターン
-
-例１
+これをconst asで書いてみると下のようになります。
 
 ```ts
-function getOSTimeZone() {
-    if ( === "macOS" ||  === "Linux") {
-     
-     return {}
-    }
+const Permissions = {
+  None: 0,
+  Read: 1 ,
+  Write: 2,
+  Execute: 4 ,
+  // Admin: Read | Write | Executeとはオブジェクトリテラルでは書けない。
+  Admin: 1 | 2 | 4,
+} as const;
 
-    // ここから先は === Windowsとして判断され、
-    // エディタのtooltip上でも
+// 型定義をより柔軟にする
+type PermissionKey = keyof typeof Permissions; // "None" | "Read" | "Write" | "Execute"
+type PermissionValue = typeof PermissionsAsConst[keyof typeof Permissions];
 
-}
+// ファイルの読み書き、量権限
+let userPermissions: PermissionValue = Permissions.Read | Permissions.Write;
+
+userPermissions = userPermissions & ~Permissions.Write
 ```
 
-例２ 製品の価格
+あれ?やっぱりas constでもできるのではないか？と思う方もいるかもしれません。
+ここで、vscodeなどのエディタを使っている場合、PermissionsValueにマウスカーソルを
+移動させてください、ツールチップに型が表示されるはずです。
+あなたの想像だと 0 | 1 | 2 | 4 | 7と表示されると思います。
 
-商品によってはサイト上で、
-2000円、3000円じゃなくて時価や価格未定などの
-文字列も入れたい時があるとする。
+しかし、PermissionValueはnumber型であると表示されます。これはなぜでしょうか？
+これはas constとtypeの仕様として、オブジェクトリテラル内のプロパティに計算が含まれる場合は、その結果をコンパイル前に値を決定できないため、0 | 1 | 2 | 4 | 7と推論できないためです。
+このため、enumとして使いたい型の値をリテラルと絞り込めないためです。
+また、enumに新たな状態が増えるたびにAdminは1 | 2 | 4, Operratorは 1 | 2のように
+どんどん具体的な数字が増えていき、数字がマジックナンバーと化します。
+これはbit演算を多用するenumとしては非常に不便です。
 
-その状態によって、ページの別の場所に
-時価、未定に関する注意書きが書かれるようになるケースを考えよう。
+このようなビット演算による状態の合成は、パーサーや設定ファイルのフラグ管理などの実装において頻出であり、as const では型の絞り込みが不完全になることから、enum を使うことが依然として実用的です。
+実際、TypeScript のコンパイラ自身のコードベースにも enum は多用されています。これは、こうした用途において enum が依然として優れた選択肢であることを示しています。
 
-```ts
-type price = number | "時価" | "未定";
-
-function 
-```
-
-### 型ガード関数
-
-discriminated Unionと合わせて読む。
-アプリケーションコードでも結構使う。
-
-上で論理演算と制御文によって、typescriptが自動的に
-ブロック上での型を絞り込むことが分かったと思う。
-
-しかし、ここで次のような条件を考えてみよう。
-
-型ガード関数は下の条件を満たすと型ガード関数として身される。
-
-1. true or falseをreturnする
-2. 戻り値に\(型判定をしたい引数 is 型\)とする
-
-型ガード関数はtrueさえ返せば、
-
-```ts
-
-type MacOS = "Macですよ。";
-
-function isMac(name: unknown, _: boolean): name is MacOS {
-    return true;
-}
-
-const os:unknown = undefined;
-
-if (isMac(os, false)) {
-    // このブロックで内では変数osは
-    // macOS型とtypescriptトランスパイルが解釈し、
-    // エディタのツールチップ上でもMacOS型と表示される。
-    os
-}
-```
-
-残念ながら型ガード関数はasync付きの非同期関数として定義できないので、
-
-型ガードは下のように非同期関数として定義できないということだ。
-
-```ts
-
-async function getOs(os: OS): os is "MacOS" {
-    // let os: OS;
-    try {
-        await $`command -V sw_vers`;
-        return true;
-    } catch {
-        return false;
-    }
-    
-}
-```
-
-```ts
-function isMacOS(os: OS): os is "MacOS" {
-
-}
-```
-
-```ts
-function 
-```
-
-関数まで見て逝去文
-
-有名なものだとdenoの標準ライブラリに使われている
-
-型ガード、型ガード関数は全てasで簡潔に書くことができるが、
-
-## おまけ
-
-### esm + jsdoc
-
-構文というより設計の話。
-typescriptの本質ドキュメンテーションとlinterなので、
-それをjsdocで行おうということ。
-
-ただのjsのためtypescriptより保守性に優れる。
-長期間運用するシステムorライブラリにむく。
-
-有名なライブラリだとsolidusがtypescriptからesm+jsdocに移行した。
-denoのcore部分がtypescriptからems+jsdocに移行した。
-技術的にどうこうというより、感情的な反発が大きいから
-組織でやるならワンマンか言語に拘りが薄くないと無理だと思う。
-
-型パズルしまくってるとtypescriptからesm+jsdocへの移行は難しい,
-
-移行の際に
-
-1. 一部、jsdocで表現できないtypescriptのコードがある。
-2. エディタの保管がtypescriptとほど賢くない。
-
-などの問題はある。
-エディタの補完はvscodeが今のところ一番賢いかな？触って見た感じ。msのツール同士だから当然と言えば、当然な気もするが。
-
-感じ方の問題ではあるが、
-jsdocからtypescriptの機能を使っているから、
-typescriptであると主張するのは正直厳しいとは思う。
-typescriptのコードを殆ど無くして、jsdocを書くのがメインになったら、
-それはtypescriptを使わなくなったというのでは？
-pythonやnodejsからlibssh使ってて、本質的にはcを使っている！みたいな話ですし。
-そりゃ本質的にはc使ってるけど...
-
-#### 型のimport
-
-```ts
-// import('').DefinedTypeで型を指定してもWebStormだとツールチップ上で正しく表示されないっぽい。　
-
-/**
- * @type {import('../path/to/library').DefinedType} 
- * /
-```
-
-### ライブラリ用の機能
-
-型パズルする系が多い。
-普通にシステム組むだけなら無くても困らない。
-
-型パズル用の機能。
-変更に強くなるとか、運用楽になるなら使ってもええんじゃない？
-覚える優先度は低く、知らなくてもコードでもドキュメンテーションでも代替可能。
-
-下記に挙げた機能は、
-型を集合のように扱っているのが直感に反すると感じる人はいるかもしれない。
-
-#### Exclude
-
-typescriptは型を集合の要素のように扱うことができる。
-
-型の部分集合と覚えよう。
-
-ライブラリ以外基本的に使わない。
-
-型パズルみが出てくるので、
-
-#### Extract
-
-型パズル。ライブラリ以外では使わない。
-型の
-正直使わない方がいいと思う。
-...Containsの方が名前の方が妥当な気がする。
-型パズルやってない人からすると、
-Genericにオブジェクトリテラルを渡すことになるのが結構気持ち悪い。
+なので、TypeScriptはenumは使ってはいけないというのは言い過ぎではないか？
+というのが筆者の見解です。
 
 
-#### Pick
-
-typescriptはオブジェクトのプロパティを集合の要素のように扱うことができる。
-
-動的に型にオブジェクトにプロパティを追加した型を作成する。
-
-
-#### Omit
-
-動的に型にプロパティを削除する。
 
 ## まとめ
 
