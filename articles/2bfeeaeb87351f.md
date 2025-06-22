@@ -3,7 +3,7 @@ title: "TypeScriptの強力な機能たち：なぜそれらを使うのか？"
 emoji: "🐥"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["contest2025ts", "ts", "typescript"]
-published: false
+published: true
 ---
 
 「なぜこのtypescriptの機能を使うのですか？」と質問された際に、
